@@ -1,0 +1,213 @@
+services:
+  # ---------- Infra ----------
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: labourse_auth
+    ports: ["3306:3306"]
+    volumes:
+      - "mysql_data:/var/lib/mysql"
+      - "./mysql-init:/docker-entrypoint-initdb.d"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on: [zookeeper]
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # ---------- Platform ----------
+  discovery-server:
+    build: ./discovery-server
+    ports: ["8761:8761"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 10s
+
+  config-server:
+    build: ./config-server
+    ports: ["8888:8888"]
+    depends_on: [discovery-server]
+
+  api-gateway:
+    build: ./api-gateway
+    ports: ["8080:8080"]
+    depends_on: [discovery-server, config-server]
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+
+  # ---------- Business services ----------
+  auth-service:
+    build: ./auth-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+      config-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_BROKER: kafka:9092
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+
+  matching-service:
+    build: ./matching-service
+    depends_on:
+      redis: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+      config-server: { condition: service_started }
+    environment:
+      REDIS_HOST: redis
+
+  customer-service:
+    build: ./customer-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+
+  labour-service:
+    build: ./labour-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+
+  job-service:
+    build: ./job-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      KAFKA_BROKER: kafka:9092
+
+  notification-service:
+    build: ./notification-service
+    depends_on:
+      discovery-server: { condition: service_started }
+    environment:
+      KAFKA_BROKER: kafka:9092
+
+  media-service:
+    build: ./media-service
+    depends_on:
+      discovery-server: { condition: service_started }
+    environment:
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+
+  payment-service:
+    build: ./payment-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
+
+  rating-service:
+    build: ./rating-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+
+  admin-service:
+    build: ./admin-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+
+  kyc-service:
+    build: ./kyc-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BROKER: kafka:9092
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+
+  chat-service:
+    build: ./chat-service
+    depends_on:
+      mysql: { condition: service_healthy }
+      discovery-server: { condition: service_started }
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+  # ---------- Observability ----------
+  prometheus:
+    image: prom/prometheus:latest
+    volumes: ["./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"]
+    ports: ["9090:9090"]
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    depends_on: [prometheus]
+
+volumes:
+  mysql_data:

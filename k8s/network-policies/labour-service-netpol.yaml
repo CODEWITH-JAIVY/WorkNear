@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: labour-service-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: labour-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+      ports:
+        - { port: 8084, protocol: TCP }
+    # Internal-only callers of /internal/labour/**
+    - from:
+        - podSelector: { matchLabels: { app: rating-service } }
+        - podSelector: { matchLabels: { app: kyc-service } }
+      ports:
+        - { port: 8084, protocol: TCP }

@@ -1,0 +1,20 @@
+server:
+  port: 8091
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKER:localhost:9092}
+internal:
+  service:
+    secret: ${INTERNAL_SERVICE_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

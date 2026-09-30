@@ -1,0 +1,25 @@
+server:
+  port: 8084
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKER:localhost:9092}
+    consumer:
+      group-id: labour-service
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+internal:
+  service:
+    secret: ${INTERNAL_SERVICE_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

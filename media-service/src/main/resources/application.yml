@@ -1,0 +1,20 @@
+server:
+  port: 8087
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    cdn-base-url: ${AWS_CDN_BASE_URL:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

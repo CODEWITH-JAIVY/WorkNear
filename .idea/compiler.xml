@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="rating-service" />
+        <module name="kyc-service" />
+        <module name="labour-service" />
+        <module name="customer-service" />
+        <module name="chat-service" />
+        <module name="notification-service" />
+        <module name="job-service" />
+        <module name="config-server" />
+        <module name="auth-service" />
+        <module name="discovery-server" />
+        <module name="payment-service" />
+        <module name="matching-service" />
+        <module name="media-service" />
+        <module name="api-gateway" />
+        <module name="admin-service" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="admin-service" options="-parameters" />
+      <module name="api-gateway" options="-parameters" />
+      <module name="auth-service" options="-parameters" />
+      <module name="chat-service" options="-parameters" />
+      <module name="config-server" options="-parameters" />
+      <module name="customer-service" options="-parameters" />
+      <module name="discovery-server" options="-parameters" />
+      <module name="job-service" options="-parameters" />
+      <module name="kyc-service" options="-parameters" />
+      <module name="labour-service" options="-parameters" />
+      <module name="matching-service" options="-parameters" />
+      <module name="media-service" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
+      <module name="payment-service" options="-parameters" />
+      <module name="rating-service" options="-parameters" />
+    </option>
+  </component>
+</project>

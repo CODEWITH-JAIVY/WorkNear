@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored — never commit real values.
+db_password              = "changeme-long-random-password"
+jwt_secret                = "changeme-long-random-256-bit-secret"
+internal_service_secret   = "changeme-different-long-random-secret"
+razorpay_key_id           = ""
+razorpay_key_secret       = ""
+razorpay_webhook_secret   = ""
+google_client_id          = ""
+google_client_secret      = ""
+domain_name               = ""   # e.g. "labourse.in" — leave blank to skip Route53/ACM for now

@@ -1,0 +1,23 @@
+# Restricts WHO can reach auth-service at the network layer, independent of the app-level
+# X-Internal-Secret check. Even if the secret ever leaks, only these specific pods can route
+# to auth-service's port at all — defense in depth, not a replacement for the secret.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: auth-service-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: auth-service
+  policyTypes: [Ingress]
+  ingress:
+    # Public traffic comes only via the gateway
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+      ports:
+        - { port: 8081, protocol: TCP }
+    # Internal-only callers of /internal/auth/**
+    - from:
+        - podSelector: { matchLabels: { app: admin-service } }
+      ports:
+        - { port: 8081, protocol: TCP }

@@ -1,0 +1,28 @@
+# Routes public HTTPS traffic (via ALB) to api-gateway only — every other service stays
+# ClusterIP-only (see their k8s/*/deployment.yaml — no LoadBalancer type there), unreachable
+# from outside the cluster. This is the single public entry point.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: labourse-gateway-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # ARN comes from terraform output — after `terraform apply`, run:
+    # kubectl annotate ingress labourse-gateway-ingress \
+    #   alb.ingress.kubernetes.io/certificate-arn=$(terraform output -raw acm_certificate_arn)
+spec:
+  rules:
+    - host: api.YOUR_DOMAIN_HERE
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 80
