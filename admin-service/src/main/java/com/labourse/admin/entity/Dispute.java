@@ -1,7 +1,6 @@
 package com.labourse.admin.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "disputes")
-@Getter @Setter @AllArgsConstructor @NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class Dispute {
 
     @Id
@@ -19,10 +18,25 @@ public class Dispute {
 
     private Long jobId;
     private Long raisedByUserId;
+
+    /** CUSTOMER / LABOUR (from the gateway's X-User-Role header). Drives executive scoping. */
+    private String raisedByType;
+
     private String reason;
-    private String status = "OPEN"; // OPEN, INVESTIGATING, RESOLVED, REJECTED
+
+    @Enumerated(EnumType.STRING)
+    private DisputeStatus status = DisputeStatus.OPEN;
+
+    private Long assignedToStaffId;
     private String resolutionNotes;
+    private Long resolvedByStaffId;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
     private LocalDateTime resolvedAt;
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

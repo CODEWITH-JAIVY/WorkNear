@@ -1,0 +1,7 @@
+/workspace/customer-service/src/main/java/com/labourse/customer/CustomerServiceApplication.java
+/workspace/customer-service/src/main/java/com/labourse/customer/controller/CustomerController.java
+/workspace/customer-service/src/main/java/com/labourse/customer/dto/CustomerProfileDto.java
+/workspace/customer-service/src/main/java/com/labourse/customer/entity/CustomerProfile.java
+/workspace/customer-service/src/main/java/com/labourse/customer/event/UserRegisteredListener.java
+/workspace/customer-service/src/main/java/com/labourse/customer/repository/CustomerProfileRepository.java
+/workspace/customer-service/src/main/java/com/labourse/customer/service/CustomerProfileService.java

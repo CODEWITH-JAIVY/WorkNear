@@ -41,7 +41,7 @@ job accepted ──▶ both sides can now connect to chat-service's /ws/chat?job
 ## Run locally
 
 ```bash
-cp .env.example .env        # fill in real values (DB creds, JWT secret, Razorpay, AWS)
+cp .env .env        # fill in real values (DB creds, JWT secret, Razorpay, AWS)
 docker compose up --build
 ```
 

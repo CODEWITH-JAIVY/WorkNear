@@ -17,7 +17,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column( unique = true)
     private String email;
 
     private String mobile;
@@ -30,6 +30,10 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserType userType;
+
+    private boolean mobileVerified;
+
+
 
     private boolean enabled = true;
 

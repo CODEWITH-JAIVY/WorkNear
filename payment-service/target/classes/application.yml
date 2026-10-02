@@ -1,0 +1,41 @@
+server:
+  port: 8089
+
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:Codewithjaivy@123580}
+  application:
+    name: payment-service
+  cloud:
+    config:
+      enabled: false          # local testing: Config Server band
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKER:localhost:9092}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_dummy}
+  key-secret: ${RAZORPAY_KEY_SECRET:dummy_secret}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:dummy_webhook}
+
+payment:
+  commission-rate: 0.15
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

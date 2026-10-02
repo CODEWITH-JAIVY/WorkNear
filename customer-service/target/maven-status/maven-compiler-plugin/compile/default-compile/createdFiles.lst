@@ -1,0 +1,7 @@
+com/labourse/customer/event/UserRegisteredListener.class
+com/labourse/customer/CustomerServiceApplication.class
+com/labourse/customer/entity/CustomerProfile.class
+com/labourse/customer/repository/CustomerProfileRepository.class
+com/labourse/customer/dto/CustomerProfileDto.class
+com/labourse/customer/service/CustomerProfileService.class
+com/labourse/customer/controller/CustomerController.class

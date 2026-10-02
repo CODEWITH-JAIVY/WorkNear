@@ -17,9 +17,18 @@ public class AuthServiceClient {
     private String internalSecret;
 
     public void banUser(Long userId) {
+        callInternal("ban", userId);
+    }
+
+    /** auth-service must expose PUT /internal/auth/{id}/unban for this to work. */
+    public void unbanUser(Long userId) {
+        callInternal("unban", userId);
+    }
+
+    private void callInternal(String action, Long userId) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Internal-Secret", internalSecret);
-        restTemplate.exchange("http://AUTH-SERVICE/internal/auth/{id}/ban",
+        restTemplate.exchange("http://AUTH-SERVICE/internal/auth/{id}/" + action,
                 HttpMethod.PUT, new HttpEntity<>(headers), Void.class, userId);
     }
 }

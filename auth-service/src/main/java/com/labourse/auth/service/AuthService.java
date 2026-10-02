@@ -81,8 +81,9 @@ public class AuthService {
     }
 
     private AuthResponse issueTokens(User user) {
-        String access = jwtService.generateAccessToken(user.getId(), user.getUserType().name());
+        String role = user.getUserType() == null ? "PENDING" : user.getUserType().name();
+        String access = jwtService.generateAccessToken(user.getId(), role);
         String refresh = jwtService.generateRefreshToken(user.getId());
-        return new AuthResponse(access, refresh, user.getId(), user.getUserType().name());
+        return new AuthResponse(access, refresh, user.getId(), role);
     }
 }

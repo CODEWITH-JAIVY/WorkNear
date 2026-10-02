@@ -1,3 +1,14 @@
+x-eureka: &eureka
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
+  SPRING_CLOUD_CONFIG_ENABLED: "false"
+
+x-db: &db
+  SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+  DB_HOST: mysql
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+
 services:
   # ---------- Infra ----------
   mysql:
@@ -26,11 +37,13 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
+    restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
+    restart: always
     depends_on: [zookeeper]
     ports: ["9092:9092"]
     environment:
@@ -42,35 +55,60 @@ services:
 
   # ---------- Platform ----------
   discovery-server:
-    build: ./discovery-server
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: discovery-server }
+    restart: on-failure
     ports: ["8761:8761"]
+    environment:
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://localhost:8761/eureka
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
       interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
 
   config-server:
-    build: ./config-server
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: config-server }
+    restart: on-failure
     ports: ["8888:8888"]
     depends_on: [discovery-server]
+    environment:
+      <<: *eureka
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: api-gateway }
+    restart: on-failure
     ports: ["8080:8080"]
-    depends_on: [discovery-server, config-server]
+    depends_on: [discovery-server]
     environment:
+      <<: *eureka
       JWT_SECRET: ${JWT_SECRET}
 
   # ---------- Business services ----------
   auth-service:
-    build: ./auth-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: auth-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
-      config-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourseAuthService?createDatabaseIfNotExist=true
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -79,122 +117,167 @@ services:
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
 
   matching-service:
-    build: ./matching-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: matching-service }
+    restart: on-failure
     depends_on:
       redis: { condition: service_healthy }
       discovery-server: { condition: service_started }
-      config-server: { condition: service_started }
     environment:
+      <<: *eureka
       REDIS_HOST: redis
 
   customer-service:
-    build: ./customer-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: customer-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourCustomer?createDatabaseIfNotExist=true
       KAFKA_BROKER: kafka:9092
 
   labour-service:
-    build: ./labour-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: labour-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourLabour?createDatabaseIfNotExist=true
       KAFKA_BROKER: kafka:9092
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
 
   job-service:
-    build: ./job-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: job-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
       discovery-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourJob?createDatabaseIfNotExist=true
       REDIS_HOST: redis
       KAFKA_BROKER: kafka:9092
 
   notification-service:
-    build: ./notification-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: notification-service }
+    restart: on-failure
     depends_on:
       discovery-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
+      <<: *eureka
       KAFKA_BROKER: kafka:9092
 
   media-service:
-    build: ./media-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: media-service }
+    restart: on-failure
     depends_on:
       discovery-server: { condition: service_started }
     environment:
+      <<: *eureka
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
 
   payment-service:
-    build: ./payment-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: payment-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourPayment?createDatabaseIfNotExist=true
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
       RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
 
   rating-service:
-    build: ./rating-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: rating-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourRating?createDatabaseIfNotExist=true
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
 
   admin-service:
-    build: ./admin-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: admin-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourAdmin?createDatabaseIfNotExist=true
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
 
   kyc-service:
-    build: ./kyc-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: kyc-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
+      kafka: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourKyc?createDatabaseIfNotExist=true
       KAFKA_BROKER: kafka:9092
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
 
   chat-service:
-    build: ./chat-service
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args: { SERVICE: chat-service }
+    restart: on-failure
     depends_on:
       mysql: { condition: service_healthy }
       discovery-server: { condition: service_started }
     environment:
-      DB_HOST: mysql
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      <<: [*eureka, *db]
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/labourChat?createDatabaseIfNotExist=true
+      KAFKA_BROKER: kafka:9092
 
   # ---------- Observability ----------
   prometheus:
