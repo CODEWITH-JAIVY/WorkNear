@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: matching-service
-  config:
-    import: "optional:configserver:http://localhost:8888"
