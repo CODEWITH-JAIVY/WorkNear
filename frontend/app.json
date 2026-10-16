@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "WorkNear",
+    "slug": "worknear",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "worknear",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.worknear.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "ios": { "bundleIdentifier": "com.worknear.app", "supportsTablet": false },
+    "plugins": [
+      "expo-secure-store",
+      ["expo-location", { "locationWhenInUsePermission": "WorkNear uses your location to match you with nearby work." }],
+      ["expo-image-picker", { "photosPermission": "Attach photos or videos of the work you need done." }],
+      ["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]
+    ]
+  }
+}

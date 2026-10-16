@@ -1,0 +1,15 @@
+# secrets
+.env
+**/.env
+# build output / tooling
+**/target/
+**/.idea/
+**/node_modules/
+frontend/.expo/
+frontend/dist/
+*.log
+# terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars

@@ -1,0 +1,10 @@
+﻿**/target/
+**/.git/
+**/.idea/
+**/node_modules/
+.env
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.auto.tfvars

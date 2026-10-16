@@ -1,0 +1,26 @@
+# Shared Dockerfile for ALL Maven services.
+# Build context = repo root (so the parent pom.xml is available):
+#   docker build -f Dockerfile.service --build-arg SERVICE=job-service .
+FROM maven:3.9-eclipse-temurin-21 AS build
+ARG SERVICE
+WORKDIR /build
+COPY pom.xml ./pom.xml
+WORKDIR /build/${SERVICE}
+COPY ${SERVICE}/pom.xml .
+COPY ${SERVICE}/src ./src
+
+# The cache mount keeps ~/.m2 between builds and shares it across all services, so a dependency is
+# downloaded once instead of 16 times, and a retry after a network failure resumes instead of
+# starting from zero. sharing=locked makes parallel service builds take turns on the cache.
+# The wagon options make Maven retry flaky downloads instead of giving up on the first failure.
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+    mvn -B -ntp clean package -DskipTests \
+      -Dmaven.wagon.http.retryHandler.count=5 \
+      -Dmaven.wagon.httpconnectionManager.ttlSeconds=25
+
+FROM eclipse-temurin:21-jre-alpine
+ARG SERVICE
+WORKDIR /app
+# --from=build: take the jar built in the stage above, not whatever sits in a local target/ folder
+COPY --from=build /build/${SERVICE}/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","app.jar"]

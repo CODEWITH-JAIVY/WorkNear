@@ -1,0 +1,46 @@
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+spring:
+  application:
+    name: labour-service
+  cloud:
+    config:
+      enabled: false          # Config Server is not used; each service reads its own application.yml + env vars
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/labourLabour?createDatabaseIfNotExist=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKER:localhost:9092}
+    consumer:
+      group-id: labour-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.value.default.type: java.util.HashMap
+        spring.json.use.type.headers: false
+        spring.json.trusted.packages: "*"
+
+internal:
+  service:
+    secret: ${INTERNAL_SERVICE_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

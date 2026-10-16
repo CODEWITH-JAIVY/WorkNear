@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: job-service }
+  template:
+    metadata:
+      labels: { app: job-service }
+    spec:
+      containers:
+        - name: job-service
+          image: ghcr.io/OWNER/labourse-microservices/job-service:latest
+          ports: [{ containerPort: 8085 }]
+          envFrom:
+            - secretRef: { name: labourse-app-secrets }
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8085 }
+            initialDelaySeconds: 25
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8085 }
+            initialDelaySeconds: 40
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-service
+spec:
+  selector: { app: job-service }
+  ports: [{ port: 8085, targetPort: 8085 }]
